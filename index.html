@@ -8,8 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Load Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Load Monetag SDK -->
-    <!-- Make sure to replace 10157784 with your actual zone ID -->
+    <!-- Load Monetag SDK (Ensure this Zone ID is correct) -->
     <script src='//libtl.com/sdk.js' data-zone='10157784' data-sdk='show_10157784'></script>
     <style>
         /* Custom scrollbar for a cleaner look */
@@ -62,10 +61,9 @@
         <!-- Header -->
         <header id="main-header" class="header-gradient p-4 rounded-b-2xl shadow-lg flex items-center justify-between z-10">
             <div class="flex items-center space-x-3">
-                <!-- Updated with ID and error fallback -->
+                <!-- Profile Photo loads Telegram photo or placeholder -->
                 <img id="profile-photo" src="https://placehold.co/40x40/ffffff/8E2DE2?text=MD" alt="Profile" class="w-10 h-10 rounded-full border-2 border-white" onerror="this.src='https://placehold.co/40x40/ffffff/8E2DE2?text=MD';">
                 <div>
-                    <!-- Updated with ID -->
                     <h1 id="profile-name" class="text-lg font-bold text-white">Md.Sabbir</h1>
                     <div class="bg-white/30 backdrop-blur-sm text-white px-3 py-0.5 rounded-full text-sm inline-flex items-center space-x-1">
                         <span>💰</span>
@@ -108,6 +106,7 @@
                     <div class="bg-green-600/30 text-green-300 text-sm font-semibold text-center p-2 rounded-lg">
                         প্রতি রেফারে 45 TAKA বোনাস
                     </div>
+                    <!-- The referral link displayed to the user (contains their userId) -->
                     <div class="bg-gray-800 p-3 rounded-lg text-center text-sm break-all" id="referral-link">
                         Loading link...
                     </div>
@@ -214,8 +213,8 @@
 
                     <div>
                         <label class="text-sm font-medium text-gray-300">পদ্ধতি নির্বাচন করুন</label>
-                        <select class="w-full bg-gray-800 border border-gray-700 text-white p-3 rounded-lg mt-1 focus:outline-none focus:ring-2 focus:ring-purple-500">
-                            <option>পদ্ধতি নির্বাচন করুন</option>
+                        <select id="withdraw-method" class="w-full bg-gray-800 border border-gray-700 text-white p-3 rounded-lg mt-1 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <option value="">পদ্ধতি নির্বাচন করুন</option>
                             <option>Bkash</option>
                             <option>Nagad</option>
                             <option>Rocket</option>
@@ -224,7 +223,7 @@
 
                     <div>
                         <label class="text-sm font-medium text-gray-300">একাউন্ট নম্বর</label>
-                        <input type="text" placeholder="01XXXXXXXXX" class="w-full bg-gray-800 border border-gray-700 text-white p-3 rounded-lg mt-1 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <input type="text" id="account-number" placeholder="01XXXXXXXXX" class="w-full bg-gray-800 border border-gray-700 text-white p-3 rounded-lg mt-1 focus:outline-none focus:ring-2 focus:ring-purple-500">
                     </div>
 
                     <div>
@@ -312,7 +311,7 @@
             <div class="text-left space-y-2 text-gray-200">
                 <p>🔥 স্বাগতম! সততার সাথে পেমেন্ট করছি। নিয়ম মেনে কাজ করলে ১০০% পেমেন্ট পাবেন ইনশাআল্লাহ।</p>
                 <p>⚡ জয়েন বোনাস: ২০ টাকা</p>
-                <p>🧑‍🤝‍🧑 প্রতি রেফারে: ১৫ টাকা</p>
+                <p>🧑‍🤝‍🧑 প্রতি রেফারে: ৪৫ টাকা</p>
                 <p>💰 প্রতি বিজ্ঞাপনে: ৩০ টাকা</p>
                 <p>❤️ প্রতিদিন ২০ টা করে বিজ্ঞাপন দেখার সুযোগ</p>
                 <p>👍 এই সাইটে কোন ইনভেস্ট করতে হবে না</p>
@@ -330,7 +329,7 @@
             <h2 id="message-title" class="text-xl font-bold mb-2"></h2>
             <p id="message-text" class="text-sm text-gray-300 mb-4"></p>
             <button id="close-message-btn" class="w-full bg-gray-600 text-white font-bold py-2 rounded-lg">
-                Close
+                বন্ধ করুন
             </button>
         </div>
     </div>
@@ -371,8 +370,8 @@
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         
         const TASK_REWARD = 30;
-        const REFERRAL_BONUS = 45; // From home page screenshot
-        const JOIN_BONUS = 20; // From notice screenshot
+        const REFERRAL_BONUS = 45; 
+        const JOIN_BONUS = 20; 
         const MAX_TASKS = 20;
         const MIN_WITHDRAW = 800;
         const MIN_REFERRALS = 18;
@@ -446,7 +445,6 @@
 
                 // Update referral link
                 const refLinkEl = document.getElementById('referral-link');
-                // Use the Telegram bot link structure
                 refLinkEl.textContent = `https://t.me/moneygardenn_bot/app?startapp=${userId}`;
                 
             } else {
@@ -465,6 +463,53 @@
                 }
             }
         });
+        
+        // --- Referral Logic (CRITICAL FIX) ---
+        async function handleReferralCheck(newUserId) {
+            let referrerId = null;
+            try {
+                // Check Telegram init data for the referrer's ID (start_param)
+                const startParam = window.Telegram.WebApp.initDataUnsafe?.start_param;
+                
+                // Validate that the referrer ID is present and is not the user's own ID
+                if (startParam && typeof startParam === 'string' && startParam !== newUserId) {
+                    referrerId = startParam;
+                }
+            } catch (e) {
+                console.log("No Telegram start_param or error reading it.", e);
+                return null;
+            }
+
+            if (referrerId) {
+                console.log(`User referred by: ${referrerId}`);
+                const referrerRef = doc(db, `artifacts/${appId}/users/${referrerId}/profile/data`);
+
+                try {
+                    const referrerDoc = await getDoc(referrerRef);
+                    if (referrerDoc.exists()) {
+                        const referrerData = referrerDoc.data();
+                        
+                        // Grant referrer the bonus and increase count
+                        await updateDoc(referrerRef, {
+                            balance: (referrerData.balance || 0) + REFERRAL_BONUS,
+                            referrals: (referrerData.referrals || 0) + 1
+                        });
+                        console.log(`Referral bonus of ${REFERRAL_BONUS} given to referrer ${referrerId}`);
+                        
+                        // Return the referrer ID to be stored in the new user's profile
+                        return referrerId;
+                    } else {
+                        console.warn(`Referrer profile not found for ID: ${referrerId}`);
+                        return null;
+                    }
+                } catch (e) {
+                    console.error("Error processing referral for referrer ID:", referrerId, e);
+                    return null;
+                }
+            }
+            return null;
+        }
+
 
         // --- Firestore Listeners ---
         
@@ -472,7 +517,7 @@
         function attachProfileListener() {
             if (userProfileUnsubscribe) userProfileUnsubscribe(); // Detach old listener
             
-            userProfileUnsubscribe = onSnapshot(userProfileRef, (docSnap) => {
+            userProfileUnsubscribe = onSnapshot(userProfileRef, async (docSnap) => {
                 updateLoading(3, "3. Loading user profile...");
                 let tgUser = null;
                 try {
@@ -487,8 +532,8 @@
                         balance: data.balance || 0,
                         referrals: data.referrals || 0,
                         tasksCompleted: data.tasksCompleted || 0,
-                        telegramFirstName: data.telegramFirstName, // Load from DB
-                        telegramPhotoUrl: data.telegramPhotoUrl // Load from DB
+                        telegramFirstName: data.telegramFirstName, 
+                        telegramPhotoUrl: data.telegramPhotoUrl 
                     };
                     
                     // --- Check for Telegram data and sync ---
@@ -496,23 +541,15 @@
                     if (tgUser) {
                         const tgName = tgUser.first_name || tgUser.username || "User";
                         
-                        // Update local state for immediate UI update
                         localState.telegramFirstName = tgName;
                         localState.telegramPhotoUrl = tgUser.photo_url;
                         
-                        // Check if DB needs updating
-                        if (data.telegramFirstName !== tgName) {
-                            profileUpdates.telegramFirstName = tgName;
-                        }
-                        if (data.telegramPhotoUrl !== tgUser.photo_url) {
-                            profileUpdates.telegramPhotoUrl = tgUser.photo_url;
-                        }
-                        if (data.telegramId !== tgUser.id) {
-                            profileUpdates.telegramId = tgUser.id;
-                        }
+                        if (data.telegramFirstName !== tgName) profileUpdates.telegramFirstName = tgName;
+                        if (data.telegramPhotoUrl !== tgUser.photo_url) profileUpdates.telegramPhotoUrl = tgUser.photo_url;
+                        if (data.telegramId !== tgUser.id) profileUpdates.telegramId = tgUser.id;
 
-                        // If there are changes, update Firestore
                         if (Object.keys(profileUpdates).length > 0) {
+                            // Only update if changes are detected
                             updateDoc(userProfileRef, profileUpdates)
                                 .then(() => console.log("Synced Telegram info to profile."))
                                 .catch(e => console.error("Failed to sync Telegram info", e));
@@ -532,8 +569,7 @@
                             document.getElementById('notice-modal').classList.remove('hidden');
                             localStorage.setItem('noticeShown', 'true');
                         }
-                        
-                        // --- Start checking for Ad SDK ---
+                        // Start checking for Ad SDK
                         checkAdSdkReady();
 
                     }, 500);
@@ -541,20 +577,24 @@
                 } else {
                     // Profile doesn't exist, create it
                     console.log("No profile found. Creating one...");
+                    
+                    // CRITICAL FIX: Handle referral check before creating profile
+                    const referrerId = await handleReferralCheck(userId);
+                    
                     const initialProfile = {
                         balance: JOIN_BONUS,
                         referrals: 0,
                         tasksCompleted: 0,
-                        joinedAt: new Date()
+                        joinedAt: new Date(),
+                        referrerId: referrerId || null // Save the referrer ID
                     };
                     
-                    // --- Add Telegram data if available on creation ---
+                    // Add Telegram data if available on creation
                     if (tgUser) {
                         initialProfile.telegramFirstName = tgUser.first_name || tgUser.username;
                         initialProfile.telegramPhotoUrl = tgUser.photo_url;
                         initialProfile.telegramId = tgUser.id;
                     }
-                    // --- End Telegram data ---
                     
                     setDoc(userProfileRef, initialProfile)
                         .then(() => console.log("Profile created.", initialProfile))
@@ -572,12 +612,12 @@
             if (withdrawalHistoryUnsubscribe) withdrawalHistoryUnsubscribe();
             
             const historyCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/withdrawals`);
-            const q = query(historyCollectionRef); // We can add orderBy here if we store a timestamp
+            const q = query(historyCollectionRef); 
             
             withdrawalHistoryUnsubscribe = onSnapshot(q, (querySnapshot) => {
                 const historyList = document.getElementById('history-list');
                 const noHistoryMessage = document.getElementById('no-history-message');
-                historyList.innerHTML = ''; // Clear list
+                historyList.innerHTML = ''; 
                 
                 if (querySnapshot.empty) {
                     noHistoryMessage.style.display = 'block';
@@ -585,17 +625,20 @@
                     noHistoryMessage.style.display = 'none';
                     querySnapshot.forEach((doc) => {
                         const item = doc.data();
-                        const date = item.requestedAt?.toDate ? item.requestedAt.toDate().toLocaleDateString() : 'N/A';
+                        const date = item.requestedAt?.toDate ? item.requestedAt.toDate().toLocaleDateString('bn-BD') : 'N/A'; // Use Bengali locale
+                        const statusClass = item.status === 'Pending' ? 'text-yellow-400' : 
+                                            item.status === 'Approved' ? 'text-green-400' : 'text-red-400';
+                        
                         const itemEl = document.createElement('div');
                         itemEl.className = 'bg-gray-800 p-3 rounded-lg mb-2 flex justify-between items-center';
                         itemEl.innerHTML = `
                             <div>
                                 <div class="font-semibold">${item.method} - ${item.accountNumber}</div>
-                                <div class="text-sm text-gray-400">${date}</div>
+                                <div class="text-sm text-gray-400">তারিখ: ${date}</div>
                             </div>
                             <div class="text-lg font-bold text-right">
                                 ${item.amount} TAKA
-                                <div class="text-sm font-normal ${item.status === 'Pending' ? 'text-yellow-400' : 'text-green-400'}">${item.status}</div>
+                                <div class="text-sm font-normal ${statusClass}">${item.status === 'Pending' ? 'পেন্ডিং' : item.status === 'Approved' ? 'সম্পন্ন' : 'বাতিল'}</div>
                             </div>
                         `;
                         historyList.appendChild(itemEl);
@@ -605,28 +648,25 @@
                 console.error("Error listening to history:", error);
             });
         }
-
-        // --- Ad SDK Ready Check ---
+        
+        // --- Ad SDK Ready Check (Preventing 'SDK Load Error') ---
         function checkAdSdkReady() {
             const watchAdBtn = document.getElementById('watch-ad-btn');
             if (!watchAdBtn) {
-                // DOM not ready, try again
+                // DOM not fully ready, try again
                 setTimeout(checkAdSdkReady, 200);
                 return;
             }
             
-            const btnText = watchAdBtn.querySelector('span');
-
             if (typeof show_10157784 === 'function') {
                 console.log("Monetag SDK is ready.");
                 adSdkReady = true;
-                // Re-run UI update to set button state correctly based on tasks
+                // Re-run UI update to set button state correctly based on tasks/readiness
                 updateUI(localState);
             } else {
-                // Not ready, disable button and retry
                 console.warn("Monetag SDK not ready, polling...");
                 adSdkReady = false;
-                // Update UI will handle disabling the button
+                // Update UI will handle disabling the button and showing the loading text
                 updateUI(localState);
                 
                 setTimeout(checkAdSdkReady, 1000); // Check again in 1 second
@@ -661,7 +701,7 @@
                 watchAdBtn.classList.add('opacity-50', 'cursor-not-allowed');
                 watchAdBtn.querySelector('span').textContent = 'টাস্ক সম্পন্ন';
                 taskCompleteMsg.classList.remove('hidden');
-            } else if (!adSdkReady) { // --- ADDED CHECK ---
+            } else if (!adSdkReady) { 
                 watchAdBtn.disabled = true;
                 watchAdBtn.classList.add('opacity-50', 'cursor-not-allowed');
                 watchAdBtn.querySelector('span').textContent = 'SDK লোড হচ্ছে...';
@@ -744,7 +784,6 @@
                     })
                     .then(() => {
                         showMessage("রিওয়ার্ড!", `আপনি ${TASK_REWARD} TAKA আয় করেছেন!`, "💰");
-                        // The UI will update automatically via the onSnapshot listener
                     })
                     .catch(e => {
                         console.error("Error updating profile after ad:", e);
@@ -756,9 +795,7 @@
                     console.error('Ad error or skip:', e);
                     showMessage("ত্রুটি", "বিজ্ঞাপনটি দেখানো যায়নি। অনুগ্রহ করে পরে আবার চেষ্টা করুন।", "😞");
                 }).finally(() => {
-                    // Restore button text (UI will be fully updated by listener)
-                    btnText.textContent = 'বিজ্ঞাপন দেখুন';
-                    btn.disabled = false;
+                    // Restore button state via updateUI (which runs after the listener fires)
                 });
             } else {
                 console.error("Monetag SDK function 'show_10157784' not found.");
@@ -772,11 +809,10 @@
         document.getElementById('copy-link-btn').addEventListener('click', () => {
             const link = document.getElementById('referral-link').textContent;
             
-            // Use fallback for clipboard API
             try {
                 const textArea = document.createElement("textarea");
                 textArea.value = link;
-                textArea.style.position = "fixed"; //avoid scrolling to bottom
+                textArea.style.position = "fixed";
                 document.body.appendChild(textArea);
                 textArea.focus();
                 textArea.select();
@@ -806,13 +842,25 @@
 
         // Withdraw Button
         document.getElementById('withdraw-btn').addEventListener('click', async () => {
-            const amount = parseFloat(document.getElementById('withdraw-amount').value);
+            const amountInput = document.getElementById('withdraw-amount');
+            const amount = parseFloat(amountInput.value);
+            const method = document.getElementById('withdraw-method').value;
+            const accountNumber = document.getElementById('account-number').value;
             
             // Validations
             if (isNaN(amount) || amount <= 0) {
                 showMessage("অবৈধ Amount", "একটি বৈধ amount লিখুন।", "⚠️");
                 return;
             }
+            if (method === '') {
+                showMessage("তথ্য দিন", "একটি পদ্ধতি নির্বাচন করুন।", "⚠️");
+                return;
+            }
+            if (!accountNumber.trim()) {
+                 showMessage("তথ্য দিন", "আপনার একাউন্ট নম্বর লিখুন।", "⚠️");
+                return;
+            }
+
             if (localState.balance < MIN_WITHDRAW) {
                 showMessage("অপর্যাপ্ত Funds", `উইথড্র করার জন্য আপনার কমপক্ষে ${MIN_WITHDRAW} TAKA প্রয়োজন।`, "🚫");
                 return;
@@ -830,13 +878,6 @@
                 return;
             }
             
-            const method = document.querySelector('select').value;
-            const accountNumber = document.querySelector('input[type="text"]').value;
-            
-            if (method === 'পদ্ধতি নির্বাচন করুন' || !accountNumber) {
-                showMessage("তথ্য দিন", "একটি পদ্ধতি নির্বাচন করুন এবং আপনার একাউন্ট নম্বর লিখুন।", "⚠️");
-                return;
-            }
             
             try {
                 // 1. Add to withdrawal history
@@ -845,7 +886,7 @@
                     amount: amount,
                     method: method,
                     accountNumber: accountNumber,
-                    status: "Pending", // Admin would change this
+                    status: "Pending", 
                     requestedAt: new Date()
                 });
                 
@@ -857,7 +898,9 @@
                 
                 // Success
                 showMessage("অনুরোধ পাঠানো হয়েছে!", `${amount} TAKA উইথড্র করার জন্য আপনার অনুরোধ জমা দেওয়া হয়েছে।`, "✅");
-                document.getElementById('withdraw-amount').value = '';
+                amountInput.value = '';
+                document.getElementById('account-number').value = '';
+                document.getElementById('withdraw-method').value = '';
 
             } catch (e) {
                 console.error("Error during withdrawal:", e);
