@@ -6,6 +6,8 @@
     <title>Money Garden</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- Load Monetag SDK -->
     <!-- Make sure to replace 10157784 with your actual zone ID -->
     <script src='//libtl.com/sdk.js' data-zone='10157784' data-sdk='show_10157784'></script>
@@ -22,7 +24,7 @@
         }
         /* Gradient header */
         .header-gradient {
-            background: linear-gradient(90deg, #8E2DE2, #4A00E0);
+            background: linear-gradient(90deg, #d8349c, #8E2DE2); /* Pinkish gradient from screenshots */
         }
         /* Gradient button */
         .btn-gradient {
@@ -58,19 +60,29 @@
     <div class="flex flex-col h-full max-w-md mx-auto shadow-lg">
 
         <!-- Header -->
-        <header class="header-gradient p-4 rounded-b-2xl shadow-lg flex items-center justify-between z-10">
+        <header id="main-header" class="header-gradient p-4 rounded-b-2xl shadow-lg flex items-center justify-between z-10">
             <div class="flex items-center space-x-3">
-                <img src="https://placehold.co/40x40/ffffff/8E2DE2?text=MD" alt="Profile" class="w-10 h-10 rounded-full border-2 border-white">
+                <!-- Updated with ID and error fallback -->
+                <img id="profile-photo" src="https://placehold.co/40x40/ffffff/8E2DE2?text=MD" alt="Profile" class="w-10 h-10 rounded-full border-2 border-white" onerror="this.src='https://placehold.co/40x40/ffffff/8E2DE2?text=MD';">
                 <div>
-                    <h1 class="text-lg font-bold text-white">Md.Sabbir</h1>
-                    <div class="bg-white/30 backdrop-blur-sm text-white px-3 py-0.5 rounded-full text-sm inline-flex items-center">
-                        Balance: <span class="font-bold ml-1" id="balance-display-header">0.00</span> TAKA
+                    <!-- Updated with ID -->
+                    <h1 id="profile-name" class="text-lg font-bold text-white">Md.Sabbir</h1>
+                    <div class="bg-white/30 backdrop-blur-sm text-white px-3 py-0.5 rounded-full text-sm inline-flex items-center space-x-1">
+                        <span>💰</span>
+                        <span>ব্যালেন্স:</span>
+                        <span class="font-bold" id="balance-display-header">0.00</span> 
+                        <span>TAKA</span>
                     </div>
                 </div>
             </div>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
+        </header>
+        
+        <!-- Page-specific Header for History -->
+        <header id="history-header" class="header-gradient p-4 rounded-b-2xl shadow-lg z-10 hidden">
+             <h1 class="text-xl font-bold text-white text-center pt-4">উইথড্রল ইতিহাস</h1>
         </header>
 
         <!-- Main Content Area (Scrollable) -->
@@ -79,40 +91,44 @@
             <!-- Page: Home -->
             <section id="page-home" class="page active space-y-4">
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="card-bg p-4 rounded-xl text-center shadow-lg">
-                        <div class="text-xs text-gray-400 mb-1">Daily Ad View</div>
+                    <div class="card-bg p-4 rounded-xl text-center shadow-lg relative">
+                        <span class="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">Ad</span>
+                        <div class="text-xs text-gray-400 mb-1">দৈনিক বিজ্ঞাপন দেখা</div>
                         <div class="text-2xl font-bold" id="task-progress-display">0/20</div>
                     </div>
                     <div class="card-bg p-4 rounded-xl text-center shadow-lg">
-                        <div class="text-xs text-gray-400 mb-1">Total Referrals</div>
+                        <div class="text-xs text-gray-400 mb-1">মোট রেফার</div>
                         <div class="text-2xl font-bold" id="referral-display">0</div>
                     </div>
                 </div>
 
                 <div class="card-bg p-4 rounded-xl shadow-lg space-y-3">
-                    <h2 class="text-lg font-semibold text-center">🎁 Refer friends and earn</h2>
-                    <p class="text-sm text-gray-300 text-center">Share your referral link with your friends. If your friend signs up, you get a 45 TAKA bonus.</p>
+                    <h2 class="text-lg font-semibold text-center">🎁 বন্ধুকে রেফার করুন এবং আয় করুন</h2>
+                    <p class="text-sm text-gray-300 text-center">আপনার রেফার লিঙ্কটি শেয়ার করুন এবং আপনার বন্ধুদের আমন্ত্রণ করুন। আপনার বন্ধু সাইন আপ করলে আপনি 45 TAKA বোনাস পাবেন।</p>
+                    <div class="bg-green-600/30 text-green-300 text-sm font-semibold text-center p-2 rounded-lg">
+                        প্রতি রেফারে 45 TAKA বোনাস
+                    </div>
                     <div class="bg-gray-800 p-3 rounded-lg text-center text-sm break-all" id="referral-link">
                         Loading link...
                     </div>
                     <div class="grid grid-cols-2 gap-4">
-                        <button id="copy-link-btn" class="bg-gray-600 text-white font-semibold py-3 rounded-lg flex items-center justify-center space-x-2">
+                        <button id="copy-link-btn" class="btn-gradient text-white font-semibold py-3 rounded-lg flex items-center justify-center space-x-2">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                 <path d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z" />
                                 <path d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h6a2 2 0 00-2-2H5z" />
                             </svg>
-                            <span>Copy Link</span>
+                            <span>লিঙ্ক কপি করুন</span>
                         </button>
-                        <button class="bg-blue-500 text-white font-semibold py-3 rounded-lg flex items-center justify-center space-x-2">
+                        <button class="bg-gradient-to-r from-blue-400 to-teal-400 text-white font-semibold py-3 rounded-lg flex items-center justify-center space-x-2">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                 <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
                             </svg>
-                            <span>Share</span>
+                            <span>শেয়ার করুন</span>
                         </button>
                     </div>
                     <!-- Button to simulate getting a referral for testing -->
                     <button id="simulate-referral-btn" class="w-full bg-green-600 text-white font-semibold py-2 rounded-lg text-sm mt-2">
-                        Simulate Referral (Test)
+                        সিমুলেট রেফার (টেস্ট)
                     </button>
                 </div>
             </section>
@@ -120,17 +136,22 @@
             <!-- Page: Support -->
             <section id="page-support" class="page space-y-4">
                 <div class="card-bg p-4 rounded-xl shadow-lg text-center">
-                    <div class="text-6xl mb-4">▶️</div>
-                    <h2 class="text-lg font-semibold mb-2">Tutorial Video</h2>
-                    <p class="text-sm text-gray-300 mb-4">Watch the tutorial video to understand how to use the app and start earning easily.</p>
+                    <div class="w-16 h-16 btn-gradient rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h2 class="text-lg font-semibold mb-2">টিউটোরিয়াল ভিডিও</h2>
+                    <p class="text-sm text-gray-300 mb-4">কিভাবে অ্যাপটি ব্যবহার করবেন-টিউটোরিয়াল ভিডিও দেখে নিন এবং সহজেই আয় শুরু করুন।</p>
                     <button class="w-full btn-gradient text-white font-bold py-3 rounded-lg">
-                        Watch Tutorial
+                        টিউটোরিয়াল দেখুন
                     </button>
                 </div>
                 <div class="card-bg p-4 rounded-xl shadow-lg">
-                    <h2 class="text-lg font-semibold mb-3">Other Help</h2>
+                    <h2 class="text-lg font-semibold mb-3">অন্যান্য সাহায্য</h2>
                     <a href="#" class="flex items-center justify-between bg-gray-800 p-3 rounded-lg">
-                        <span class="text-blue-400">Join Telegram</span>
+                        <span class="text-blue-400">টেলিগ্রাম</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
                         </svg>
@@ -142,30 +163,30 @@
             <section id="page-tasks" class="page space-y-4">
                 <div class="card-bg p-4 rounded-xl shadow-lg">
                     <div class="flex justify-between items-center mb-2">
-                        <h2 class="text-lg font-semibold">Daily Task Progress</h2>
+                        <h2 class="text-lg font-semibold">দৈনিক টাস্ক প্রোগ্রেস</h2>
                         <span class="font-bold text-lg" id="task-progress-display-2">0/20</span>
                     </div>
                     <div class="w-full bg-gray-800 rounded-full h-2.5">
                         <div id="task-progress-bar" class="btn-gradient h-2.5 rounded-full" style="width: 0%"></div>
                     </div>
                     <div class="text-sm text-gray-300 text-center mt-2" id="task-remaining-text">
-                        20 tasks remaining today
+                        আজ ২০ টি টাস্ক বাকি আছে
                     </div>
                 </div>
 
                 <div class="card-bg p-4 rounded-xl shadow-lg text-center space-y-3">
                     <div class="text-5xl">📹</div>
-                    <h2 class="text-lg font-semibold">Watch Ad</h2>
-                    <p class="text-sm text-gray-300">Earn 30.00 TAKA for each ad you watch.</p>
-                    <div class="text-xl font-bold text-green-400">Reward: 30.00 TAKA</div>
+                    <h2 class="text-lg font-semibold">বিজ্ঞাপন দেখুন</h2>
+                    <p class="text-sm text-gray-300">প্রতিটি বিজ্ঞাপন দেখে 30.00 TAKA আয় করুন।</p>
+                    <div class="text-xl font-bold text-green-400">💵 রিওয়ার্ড: 30.00 TAKA</div>
                     <button id="watch-ad-btn" class="w-full btn-gradient text-white font-bold py-3 rounded-lg flex items-center justify-center space-x-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
                         </svg>
-                        <span>Watch Ad</span>
+                        <span>বিজ্ঞাপন দেখুন</span>
                     </button>
                     <div id="task-complete-message" class="text-green-400 font-semibold p-3 bg-green-900/50 rounded-lg hidden">
-                        You have completed all tasks for today.
+                        ⓘ আপনি আজকের সকল টাস্ক সম্পন্ন করেছেন
                     </div>
                 </div>
             </section>
@@ -173,28 +194,28 @@
             <!-- Page: Withdraw -->
             <section id="page-withdraw" class="page space-y-4">
                 <div class="card-bg p-4 rounded-xl shadow-lg text-center">
-                    <div class="text-sm text-gray-300">Your Balance</div>
+                    <div class="text-sm text-gray-300">আপনার ব্যালেন্স</div>
                     <div class="text-3xl font-bold my-1" id="balance-display-withdraw">0.00 <span class="text-lg">TAKA</span></div>
                 </div>
 
                 <div class="card-bg p-4 rounded-xl shadow-lg space-y-4">
-                    <h2 class="text-lg font-semibold text-center mb-2">Withdraw Money</h2>
+                    <h2 class="text-lg font-semibold text-center mb-2">টাকা উত্তোলন</h2>
                     
                     <div class="bg-gray-800 p-3 rounded-lg">
                         <div class="flex justify-between items-center text-sm">
-                            <span class="text-gray-300">Minimum Withdrawal</span>
+                            <span class="text-gray-300">ন্যূনতম উত্তোলনযোগ্য</span>
                             <span class="font-semibold text-green-400">800.00 TAKA</span>
                         </div>
                         <div class="flex justify-between items-center text-sm mt-1">
-                            <span class="text-gray-300">Minimum Referrals</span>
-                            <span class="font-semibold text-green-400">18 Users</span>
+                            <span class="text-gray-300">ন্যূনতম রেফারেল প্রয়োজন</span>
+                            <span class="font-semibold text-green-400">18 জন</span>
                         </div>
                     </div>
 
                     <div>
-                        <label class="text-sm font-medium text-gray-300">Select Method</label>
+                        <label class="text-sm font-medium text-gray-300">পদ্ধতি নির্বাচন করুন</label>
                         <select class="w-full bg-gray-800 border border-gray-700 text-white p-3 rounded-lg mt-1 focus:outline-none focus:ring-2 focus:ring-purple-500">
-                            <option>Select a method</option>
+                            <option>পদ্ধতি নির্বাচন করুন</option>
                             <option>Bkash</option>
                             <option>Nagad</option>
                             <option>Rocket</option>
@@ -202,7 +223,7 @@
                     </div>
 
                     <div>
-                        <label class="text-sm font-medium text-gray-300">Account Number</label>
+                        <label class="text-sm font-medium text-gray-300">একাউন্ট নম্বর</label>
                         <input type="text" placeholder="01XXXXXXXXX" class="w-full bg-gray-800 border border-gray-700 text-white p-3 rounded-lg mt-1 focus:outline-none focus:ring-2 focus:ring-purple-500">
                     </div>
 
@@ -215,7 +236,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                         </svg>
-                        <span>Submit Request</span>
+                        <span>রিকোয়েস্ট জমা দিন</span>
                     </button>
                 </div>
             </section>
@@ -223,14 +244,14 @@
             <!-- Page: History -->
             <section id="page-history" class="page space-y-4">
                 <div class="card-bg p-4 rounded-xl shadow-lg">
-                    <h2 class="text-lg font-semibold mb-3">Your Withdrawal Record</h2>
+                    <h2 class="text-lg font-semibold mb-3">আপনার উইথড্রল রেকর্ড</h2>
                     <div id="history-list">
                         <!-- History items will be injected here -->
                     </div>
                     <div id="no-history-message" class="text-center py-10">
                         <div class="text-5xl mb-4">📄</div>
-                        <p class="font-semibold">No withdrawal history found.</p>
-                        <p class="text-sm text-gray-400">You haven't made any withdrawal requests yet.</p>
+                        <p class="font-semibold">কোনো উইথড্রল ইতিহাস পাওয়া যায় নি।</p>
+                        <p class="text-sm text-gray-400">আপনি এখনো কোনো উইথড্রল রিকোয়েস্ট জমা দেননি।</p>
                     </div>
                 </div>
             </section>
@@ -241,23 +262,23 @@
         <nav class="nav-bg fixed bottom-0 left-0 right-0 max-w-md mx-auto h-16 rounded-t-2xl flex justify-around items-center z-10 shadow-inner">
             <button class="nav-item active p-2" data-page="home">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" /></svg>
-                <span class="text-xs">Home</span>
+                <span class="text-xs">হোম</span>
             </button>
             <button class="nav-item p-2" data-page="support">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
-                <span class="text-xs">Support</span>
+                <span class="text-xs">সাপোর্ট</span>
             </button>
             <button class="nav-item p-2" data-page="tasks">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm3 2a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
-                <span class="text-xs">Tasks</span>
+                <span class="text-xs">টাস্ক</span>
             </button>
             <button class="nav-item p-2" data-page="withdraw">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" /><path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd" /></svg>
-                <span class="text-xs">Withdraw</span>
+                <span class="text-xs">উইথড্র</span>
             </button>
             <button class="nav-item p-2" data-page="history">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" /></svg>
-                <span class="text-xs">History</span>
+                <span class="text-xs">ইতিহাস</span>
             </button>
         </nav>
     </div>
@@ -271,13 +292,13 @@
                 </svg>
             </div>
             <h2 class="text-xl font-bold mb-2">Loading Your Dashboard</h2>
-            <p class="text-sm text-gray-300 mb-4">Securing connection & syncing data...</p>
+            <p class="text-sm text-gray-300 mb-4">Securely syncing your profile & configuration</p>
             <div class="w-full bg-gray-800 rounded-full h-2.5">
                 <div id="loading-bar" class="btn-gradient h-2.5 rounded-full" style="width: 10%"></div>
             </div>
             <ul class="text-left text-sm text-gray-400 mt-4 space-y-1" id="loading-steps">
                 <li id="step-1" class="opacity-50">1. Secure connection established</li>
-                <li id="step-2" class="opacity-50">2. Authenticating user...</li>
+                <li id="step-2" class="opacity-50">2. Verifying Telegram account...</li>
                 <li id="step-3" class="opacity-50">3. Loading user profile...</li>
                 <li id="step-4" class="opacity-50">4. Syncing configuration...</li>
             </ul>
@@ -287,17 +308,17 @@
     <!-- Notice Modal -->
     <div id="notice-modal" class="fixed inset-0 bg-gray-900/90 backdrop-blur-sm z-40 flex items-center justify-center p-4 hidden">
         <div class="card-bg p-6 rounded-2xl shadow-2xl w-10/12 max-w-sm">
-            <h2 class="text-2xl font-bold text-center mb-4">🔔 Notice</h2>
+            <h2 class="text-2xl font-bold text-center mb-4">🔔 নোটিস</h2>
             <div class="text-left space-y-2 text-gray-200">
-                <p>🔥 Welcome! Work honestly and you will get 100% payment.</p>
-                <p>⚡ Join Bonus: 20 Taka</p>
-                <p>🧑‍🤝‍🧑 Per Refer: 15 Taka</p>
-                <p>💰 Per Ad: 30 Taka</p>
-                <p>❤️ Daily 20 Taka ad view opportunity.</p>
-                <p>👍 No investment needed on this site.</p>
+                <p>🔥 স্বাগতম! সততার সাথে পেমেন্ট করছি। নিয়ম মেনে কাজ করলে ১০০% পেমেন্ট পাবেন ইনশাআল্লাহ।</p>
+                <p>⚡ জয়েন বোনাস: ২০ টাকা</p>
+                <p>🧑‍🤝‍🧑 প্রতি রেফারে: ১৫ টাকা</p>
+                <p>💰 প্রতি বিজ্ঞাপনে: ৩০ টাকা</p>
+                <p>❤️ প্রতিদিন ২০ টা করে বিজ্ঞাপন দেখার সুযোগ</p>
+                <p>👍 এই সাইটে কোন ইনভেস্ট করতে হবে না</p>
             </div>
             <button id="close-notice-btn" class="w-full btn-gradient text-white font-bold py-3 rounded-lg mt-6">
-                Understood
+                বুঝেছি
             </button>
         </div>
     </div>
@@ -336,14 +357,22 @@
             query
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // --- Initialize Telegram Web App ---
+        try {
+            window.Telegram.WebApp.ready();
+            console.log("Telegram Web App SDK initialized.");
+        } catch (e) {
+            console.log("Not in Telegram environment.");
+        }
+
         // --- Configs ---
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-money-garden';
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         
         const TASK_REWARD = 30;
-        const REFERRAL_BONUS = 45; // From screenshot 1
-        const JOIN_BONUS = 20; // From screenshot 2
+        const REFERRAL_BONUS = 45; // From home page screenshot
+        const JOIN_BONUS = 20; // From notice screenshot
         const MAX_TASKS = 20;
         const MIN_WITHDRAW = 800;
         const MIN_REFERRALS = 18;
@@ -354,8 +383,11 @@
         let localState = {
             balance: 0,
             referrals: 0,
-            tasksCompleted: 0
+            tasksCompleted: 0,
+            telegramFirstName: null,
+            telegramPhotoUrl: null
         };
+        let adSdkReady = false; // Flag to track if ad SDK is loaded
 
         try {
             app = initializeApp(firebaseConfig);
@@ -403,9 +435,9 @@
         // --- Auth State ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                updateLoading(2, "2. User authenticated.");
+                updateLoading(2, "2. Verifying Telegram account...");
                 userId = user.uid;
-                userProfileRef = doc(db, `artifacts/${appId}/users/${userId}/profile`);
+                userProfileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
                 
                 // Attach real-time listener for user profile
                 attachProfileListener();
@@ -414,8 +446,8 @@
 
                 // Update referral link
                 const refLinkEl = document.getElementById('referral-link');
-                const appUrl = window.location.origin + window.location.pathname;
-                refLinkEl.textContent = `${appUrl}?ref=${userId}`;
+                // Use the Telegram bot link structure
+                refLinkEl.textContent = `https://t.me/moneygardenn_bot/app?startapp=${userId}`;
                 
             } else {
                 // Not authenticated, try to sign in
@@ -442,14 +474,52 @@
             
             userProfileUnsubscribe = onSnapshot(userProfileRef, (docSnap) => {
                 updateLoading(3, "3. Loading user profile...");
+                let tgUser = null;
+                try {
+                    tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
+                } catch(e) { console.log("Telegram data not available."); }
+
+                
                 if (docSnap.exists()) {
                     // Profile exists, update local state and UI
                     const data = docSnap.data();
                     localState = {
                         balance: data.balance || 0,
                         referrals: data.referrals || 0,
-                        tasksCompleted: data.tasksCompleted || 0
+                        tasksCompleted: data.tasksCompleted || 0,
+                        telegramFirstName: data.telegramFirstName, // Load from DB
+                        telegramPhotoUrl: data.telegramPhotoUrl // Load from DB
                     };
+                    
+                    // --- Check for Telegram data and sync ---
+                    let profileUpdates = {};
+                    if (tgUser) {
+                        const tgName = tgUser.first_name || tgUser.username || "User";
+                        
+                        // Update local state for immediate UI update
+                        localState.telegramFirstName = tgName;
+                        localState.telegramPhotoUrl = tgUser.photo_url;
+                        
+                        // Check if DB needs updating
+                        if (data.telegramFirstName !== tgName) {
+                            profileUpdates.telegramFirstName = tgName;
+                        }
+                        if (data.telegramPhotoUrl !== tgUser.photo_url) {
+                            profileUpdates.telegramPhotoUrl = tgUser.photo_url;
+                        }
+                        if (data.telegramId !== tgUser.id) {
+                            profileUpdates.telegramId = tgUser.id;
+                        }
+
+                        // If there are changes, update Firestore
+                        if (Object.keys(profileUpdates).length > 0) {
+                            updateDoc(userProfileRef, profileUpdates)
+                                .then(() => console.log("Synced Telegram info to profile."))
+                                .catch(e => console.error("Failed to sync Telegram info", e));
+                        }
+                    }
+                    // --- End Telegram sync ---
+
                     console.log("Profile data updated:", localState);
                     updateUI(localState);
                     updateLoading(4, "4. Syncing configuration...");
@@ -462,10 +532,14 @@
                             document.getElementById('notice-modal').classList.remove('hidden');
                             localStorage.setItem('noticeShown', 'true');
                         }
+                        
+                        // --- Start checking for Ad SDK ---
+                        checkAdSdkReady();
+
                     }, 500);
 
                 } else {
-                    // Profile doesn't exist, create it with join bonus
+                    // Profile doesn't exist, create it
                     console.log("No profile found. Creating one...");
                     const initialProfile = {
                         balance: JOIN_BONUS,
@@ -473,8 +547,17 @@
                         tasksCompleted: 0,
                         joinedAt: new Date()
                     };
+                    
+                    // --- Add Telegram data if available on creation ---
+                    if (tgUser) {
+                        initialProfile.telegramFirstName = tgUser.first_name || tgUser.username;
+                        initialProfile.telegramPhotoUrl = tgUser.photo_url;
+                        initialProfile.telegramId = tgUser.id;
+                    }
+                    // --- End Telegram data ---
+                    
                     setDoc(userProfileRef, initialProfile)
-                        .then(() => console.log("Profile created with join bonus."))
+                        .then(() => console.log("Profile created.", initialProfile))
                         .catch(e => console.error("Error creating profile:", e));
                     // The listener will fire again with the new data
                 }
@@ -523,9 +606,40 @@
             });
         }
 
+        // --- Ad SDK Ready Check ---
+        function checkAdSdkReady() {
+            const watchAdBtn = document.getElementById('watch-ad-btn');
+            if (!watchAdBtn) {
+                // DOM not ready, try again
+                setTimeout(checkAdSdkReady, 200);
+                return;
+            }
+            
+            const btnText = watchAdBtn.querySelector('span');
+
+            if (typeof show_10157784 === 'function') {
+                console.log("Monetag SDK is ready.");
+                adSdkReady = true;
+                // Re-run UI update to set button state correctly based on tasks
+                updateUI(localState);
+            } else {
+                // Not ready, disable button and retry
+                console.warn("Monetag SDK not ready, polling...");
+                adSdkReady = false;
+                // Update UI will handle disabling the button
+                updateUI(localState);
+                
+                setTimeout(checkAdSdkReady, 1000); // Check again in 1 second
+            }
+        }
+
         // --- UI Update Function ---
         function updateUI(data) {
-            // Header
+            // --- Header (Now dynamic) ---
+            document.getElementById('profile-name').textContent = data.telegramFirstName || "Md.Sabbir";
+            const profilePhoto = data.telegramPhotoUrl || "https://placehold.co/40x40/ffffff/8E2DE2?text=MD";
+            document.getElementById('profile-photo').src = profilePhoto;
+            
             document.getElementById('balance-display-header').textContent = data.balance.toFixed(2);
             
             // Home Page
@@ -537,7 +651,7 @@
             const progressPercent = (tasksDone / MAX_TASKS) * 100;
             document.getElementById('task-progress-display-2').textContent = `${tasksDone}/${MAX_TASKS}`;
             document.getElementById('task-progress-bar').style.width = `${progressPercent}%`;
-            document.getElementById('task-remaining-text').textContent = `${MAX_TASKS - tasksDone} tasks remaining today`;
+            document.getElementById('task-remaining-text').textContent = `আজ ${MAX_TASKS - tasksDone} টি টাস্ক বাকি আছে`;
             
             const watchAdBtn = document.getElementById('watch-ad-btn');
             const taskCompleteMsg = document.getElementById('task-complete-message');
@@ -545,12 +659,17 @@
             if (tasksDone >= MAX_TASKS) {
                 watchAdBtn.disabled = true;
                 watchAdBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                watchAdBtn.querySelector('span').textContent = 'Tasks Completed';
+                watchAdBtn.querySelector('span').textContent = 'টাস্ক সম্পন্ন';
                 taskCompleteMsg.classList.remove('hidden');
+            } else if (!adSdkReady) { // --- ADDED CHECK ---
+                watchAdBtn.disabled = true;
+                watchAdBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                watchAdBtn.querySelector('span').textContent = 'SDK লোড হচ্ছে...';
+                taskCompleteMsg.classList.add('hidden');
             } else {
                 watchAdBtn.disabled = false;
                 watchAdBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                watchAdBtn.querySelector('span').textContent = 'Watch Ad';
+                watchAdBtn.querySelector('span').textContent = 'বিজ্ঞাপন দেখুন';
                 taskCompleteMsg.classList.add('hidden');
             }
             
@@ -561,6 +680,8 @@
         // --- Navigation Logic ---
         const navItems = document.querySelectorAll('.nav-item');
         const pages = document.querySelectorAll('.page');
+        const mainHeader = document.getElementById('main-header');
+        const historyHeader = document.getElementById('history-header');
 
         navItems.forEach(item => {
             item.addEventListener('click', () => {
@@ -575,6 +696,15 @@
                 navItems.forEach(nav => {
                     nav.classList.toggle('active', nav.dataset.page === pageId);
                 });
+
+                // Switch header
+                if (pageId === 'history') {
+                    mainHeader.classList.add('hidden');
+                    historyHeader.classList.remove('hidden');
+                } else {
+                    mainHeader.classList.remove('hidden');
+                    historyHeader.classList.add('hidden');
+                }
             });
         });
 
@@ -588,18 +718,17 @@
         // Task Button (Monetag Integration)
         document.getElementById('watch-ad-btn').addEventListener('click', () => {
             if (localState.tasksCompleted >= MAX_TASKS) {
-                showMessage("Tasks Done", "You have already completed all tasks for today.", "🎉");
+                showMessage("টাস্ক সম্পন্ন", "আপনি আজকের সকল টাস্ক সম্পন্ন করেছেন।", "🎉");
                 return;
             }
             
             // Show loading spinner on button
             const btn = document.getElementById('watch-ad-btn');
             const btnText = btn.querySelector('span');
-            btnText.textContent = 'Loading Ad...';
+            btnText.textContent = 'লোড হচ্ছে...';
             btn.disabled = true;
 
             // --- Call Monetag Rewarded Interstitial ---
-            // This 'show_10157784' function is from the Monetag SDK
             if (typeof show_10157784 === 'function') {
                 show_10157784().then(() => {
                     // Ad was watched successfully
@@ -614,27 +743,27 @@
                         tasksCompleted: newTasks
                     })
                     .then(() => {
-                        showMessage("Reward!", `You have earned ${TASK_REWARD} TAKA!`, "💰");
+                        showMessage("রিওয়ার্ড!", `আপনি ${TASK_REWARD} TAKA আয় করেছেন!`, "💰");
                         // The UI will update automatically via the onSnapshot listener
                     })
                     .catch(e => {
                         console.error("Error updating profile after ad:", e);
-                        showMessage("Error", "Could not save your reward. Please try again.", "🚫");
+                        showMessage("ত্রুটি", "আপনার রিওয়ার্ড সেভ করা যায়নি। আবার চেষ্টা করুন।", "🚫");
                     });
 
                 }).catch(e => {
                     // Ad failed to load or was skipped
                     console.error('Ad error or skip:', e);
-                    showMessage("Ad Error", "The ad could not be shown. Please try again later.", "😞");
+                    showMessage("ত্রুটি", "বিজ্ঞাপনটি দেখানো যায়নি। অনুগ্রহ করে পরে আবার চেষ্টা করুন।", "😞");
                 }).finally(() => {
                     // Restore button text (UI will be fully updated by listener)
-                    btnText.textContent = 'Watch Ad';
+                    btnText.textContent = 'বিজ্ঞাপন দেখুন';
                     btn.disabled = false;
                 });
             } else {
                 console.error("Monetag SDK function 'show_10157784' not found.");
-                showMessage("SDK Error", "Ad SDK is not loaded. Please refresh.", "🚫");
-                btnText.textContent = 'Watch Ad';
+                showMessage("SDK ত্রুটি", "Ad SDK লোড হয়নি। রিফ্রেশ করুন।", "🚫");
+                btnText.textContent = 'বিজ্ঞাপন দেখুন';
                 btn.disabled = false;
             }
         });
@@ -653,10 +782,10 @@
                 textArea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textArea);
-                showMessage("Copied!", "Referral link copied to clipboard.", "📋");
+                showMessage("কপি!", "রেফারেল লিঙ্ক ক্লিপবোর্ডে কপি করা হয়েছে।", "📋");
             } catch (err) {
                 console.error('Fallback: Oops, unable to copy', err);
-                showMessage("Error", "Could not copy link.", "🚫");
+                showMessage("ত্রুটি", "লিঙ্ক কপি করা যায়নি।", "🚫");
             }
         });
         
@@ -670,7 +799,7 @@
                 balance: newBalance
             })
             .then(() => {
-                showMessage("Referral!", `You got a referral bonus of ${REFERRAL_BONUS} TAKA!`, "🎉");
+                showMessage("রেফারেল!", `আপনি ${REFERRAL_BONUS} TAKA রেফারেল বোনাস পেয়েছেন!`, "🎉");
             })
             .catch(e => console.error("Error simulating referral:", e));
         });
@@ -681,31 +810,31 @@
             
             // Validations
             if (isNaN(amount) || amount <= 0) {
-                showMessage("Invalid Amount", "Please enter a valid amount.", "⚠️");
+                showMessage("অবৈধ Amount", "একটি বৈধ amount লিখুন।", "⚠️");
                 return;
             }
             if (localState.balance < MIN_WITHDRAW) {
-                showMessage("Insufficient Funds", `You need at least ${MIN_WITHDRAW} TAKA to withdraw.`, "🚫");
+                showMessage("অপর্যাপ্ত Funds", `উইথড্র করার জন্য আপনার কমপক্ষে ${MIN_WITHDRAW} TAKA প্রয়োজন।`, "🚫");
                 return;
             }
             if (localState.referrals < MIN_REFERRALS) {
-                showMessage("Not Enough Referrals", `You need at least ${MIN_REFERRALS} referrals to withdraw.`, "🚫");
+                showMessage("অপর্যাপ্ত রেফারেল", `উইথড্র করার জন্য আপনার কমপক্ষে ${MIN_REFERRALS} টি রেফারেল প্রয়োজন।`, "🚫");
                 return;
             }
              if (amount < MIN_WITHDRAW) {
-                showMessage("Amount Too Low", `Minimum withdrawal amount is ${MIN_WITHDRAW} TAKA.`, "⚠️");
+                showMessage("Amount খুব কম", `ন্যূনতম উইথড্র পরিমাণ ${MIN_WITHDRAW} TAKA।`, "⚠️");
                 return;
             }
             if (amount > localState.balance) {
-                showMessage("Insufficient Funds", "You cannot withdraw more than your balance.", "🚫");
+                showMessage("অপর্যাপ্ত Funds", "আপনি আপনার ব্যালেন্সের বেশি উইথড্র করতে পারবেন না।", "🚫");
                 return;
             }
             
             const method = document.querySelector('select').value;
             const accountNumber = document.querySelector('input[type="text"]').value;
             
-            if (method === 'Select a method' || !accountNumber) {
-                showMessage("Missing Info", "Please select a method and enter your account number.", "⚠️");
+            if (method === 'পদ্ধতি নির্বাচন করুন' || !accountNumber) {
+                showMessage("তথ্য দিন", "একটি পদ্ধতি নির্বাচন করুন এবং আপনার একাউন্ট নম্বর লিখুন।", "⚠️");
                 return;
             }
             
@@ -727,12 +856,12 @@
                 });
                 
                 // Success
-                showMessage("Request Sent!", `Your request to withdraw ${amount} TAKA has been submitted.`, "✅");
+                showMessage("অনুরোধ পাঠানো হয়েছে!", `${amount} TAKA উইথড্র করার জন্য আপনার অনুরোধ জমা দেওয়া হয়েছে।`, "✅");
                 document.getElementById('withdraw-amount').value = '';
 
             } catch (e) {
                 console.error("Error during withdrawal:", e);
-                showMessage("Error", "Something went wrong. Please try again.", "🚫");
+                showMessage("ত্রুটি", "কিছু একটা ভুল হয়েছে। আবার চেষ্টা করুন।", "🚫");
             }
         });
         
